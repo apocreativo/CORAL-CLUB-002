@@ -1,4 +1,5 @@
 // src/App.jsx
+import "./App.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 /* ============ Estado inicial ============ */
