@@ -53,7 +53,7 @@ body{
   z-index:2;
 }
 .tent{
-  position:absolute; width:39px; height:39px; margin:-19px 0 0 -19px;
+  position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px;
   border-radius:10px; cursor:pointer;
   border:1px solid rgba(255,255,255,.18);
   display:flex; align-items:center; justify-content:center;
@@ -287,3 +287,4 @@ body{
 .timer-inline .timer-emoji{ line-height:1; }
 .timer-inline .timer-text{ font-feature-settings:"tnum"; font-variant-numeric:tabular-nums; letter-spacing:.3px; }
 
+.tent{width:16px; height:16px; border-radius:999px; position:absolute; border:1px solid rgba(0,0,0,.35)}
