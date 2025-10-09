@@ -1,37 +1,27 @@
-function kvHeaders() {
-  return { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}` };
+function shallowMerge(current = {}, patch = {}){
+  const keysObj = ["brand","background","layout","payments"];
+  const keysArr = ["categories","tents","reservations","logs"];
+  const next = { ...current };
+  for (const k of keysObj){ if (k in patch) next[k] = { ...(current[k]||{}), ...(patch[k]||{}) }; else if (current[k]!==undefined) next[k]=current[k]; }
+  for (const k of keysArr){ if (k in patch) next[k] = Array.isArray(patch[k]) ? patch[k] : (Array.isArray(current[k])? current[k] : []); else next[k] = Array.isArray(current[k])? current[k]:[]; }
+  for (const k of Object.keys(patch)) if (![...keysObj, ...keysArr].includes(k)) next[k]=patch[k];
+  return next;
 }
-function kvJSON() {
-  return { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}`, "content-type": "application/json" };
-}
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
-  try {
-    const body = await req.json();
-    const stateKey = body.stateKey, patch = body.patch, revKey = body.revKey;
-
-    // 1) Leer estado actual
-    const getR = await fetch(`${process.env.KV_REST_API_URL}/get/${encodeURIComponent(stateKey)}`, { headers: kvHeaders() });
-    const curJ = await getR.json();
-    const cur = curJ?.result ?? null;
-
-    // 2) Merge superficial (last-write-wins)
-    const next = { ...(cur || {}), ...(patch || {}) };
-
-    // 3) Guardar
-    await fetch(`${process.env.KV_REST_API_URL}/set/${encodeURIComponent(stateKey)}`, {
-      method: "POST", headers: kvJSON(), body: JSON.stringify({ value: next, nx: false })
-    });
-
-    // 4) Bump de rev
-    const incrR = await fetch(`${process.env.KV_REST_API_URL}/incr/${encodeURIComponent(revKey)}`, {
-      method: "POST", headers: kvHeaders()
-    });
-    const incrJ = await incrR.json();
-    const rev = incrJ?.result ?? 0;
-
-    return res.status(200).json({ ok: true, state: next, rev });
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: String(e) });
-  }
+export default async function handler(req){
+  if (req.method !== "POST") return new Response("Method Not Allowed",{status:405});
+  const { stateKey, patch, revKey } = await req.json();
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  const getRes = await fetch(`${url}/get/${encodeURIComponent(stateKey)}`, { headers: { Authorization:`Bearer ${token}` } });
+  const getJson = await getRes.json().catch(()=>({}));
+  const current = getRes.ok ? (getJson?.result || {}) : {};
+  const next = shallowMerge(current, patch||{});
+  const nextRev = Number(next?.rev || current?.rev || 0) + 1;
+  next.rev = nextRev;
+  const setRes = await fetch(`${url}/set/${encodeURIComponent(stateKey)}`, { method:'POST', headers:{ Authorization:`Bearer ${token}`, 'content-type':'application/json' }, body: JSON.stringify({ value: next, nx:false }) });
+  if(!setRes.ok) return new Response(await setRes.text(), { status: setRes.status });
+  const incrRes = await fetch(`${url}/incr/${encodeURIComponent(revKey)}`, { method:'POST', headers:{ Authorization:`Bearer ${token}` } });
+  const incrJson = await incrRes.json().catch(()=>({}));
+  const rev = incrRes.ok ? Number(incrJson?.result||nextRev) : nextRev;
+  return new Response(JSON.stringify({ ok:true, rev, state: next }), { status:200, headers:{ 'content-type':'application/json' } });
 }
