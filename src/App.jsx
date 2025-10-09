@@ -126,7 +126,6 @@ export default function App(){
     tick();
     return ()=>{ on=false; clearInterval(id); };
   }, []);
-);
   useEffect(()=>{
     try{
       const minimal = { tents: data.tents, reservations: data.reservations, payments: data.payments, security: data.security };
