@@ -109,10 +109,6 @@ export default function App(){
       }
     }catch(e){}
   }, []
-// (primer useEffect de montaje / lo que tengas arriba)
-useEffect(()=>{
-  // ...tu código...
-}, []);
 
 // Multiusuario: poll de rev para rehidratar cambios
 useEffect(()=>{
