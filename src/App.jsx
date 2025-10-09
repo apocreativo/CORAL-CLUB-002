@@ -109,30 +109,36 @@ export default function App(){
       }
     }catch(e){}
   }, []
-  // Multiusuario: poll de rev para rehidratar cambios
-  useEffect(()=>{
-    let on = true;
-    const tick = async ()=>{
-      const r = await kvGet(REV_KEY);
-      if(!on) return;
-      if(r!=null && r!==rev){
-        setRev(r);
-        setSessionRevParam(String(r));
-        const st = await kvGet(STATE_KEY);
-        if(st) setData(st);
-      }
-    };
-    const id = setInterval(tick, 1500);
-    tick();
-    return ()=>{ on=false; clearInterval(id); };
-  }, []);
-  useEffect(()=>{
-    try{
-      const minimal = { tents: data.tents, reservations: data.reservations, payments: data.payments, security: data.security };
-      localStorage.setItem("coralclub:localState", JSON.stringify(minimal));
-    }catch(e){}
-  }, [data.tents, data.reservations, data.payments, data.security]);
+// (primer useEffect de montaje / lo que tengas arriba)
+useEffect(()=>{
+  // ...tu código...
+}, []);
 
+// Multiusuario: poll de rev para rehidratar cambios
+useEffect(()=>{
+  let on = true;
+  const tick = async ()=>{
+    const r = await kvGet(REV_KEY);
+    if(!on) return;
+    if(r!=null && r!==rev){
+      setRev(r);
+      setSessionRevParam(String(r));
+      const st = await kvGet(STATE_KEY);
+      if(st) setData(st);
+    }
+  };
+  const id = setInterval(tick, 1500);
+  tick();
+  return ()=>{ on=false; clearInterval(id); };
+}, []);
+
+// (siguiente useEffect que persiste en localStorage, si lo tienes)
+useEffect(()=>{
+  try{
+    const minimal = { tents: data.tents, reservations: data.reservations, payments: data.payments, security: data.security };
+    localStorage.setItem("coralclub:localState", JSON.stringify(minimal));
+  }catch(e){}
+}, [data.tents, data.reservations, data.payments, data.security]);
   // UI
   const [adminOpen, setAdminOpen] = useState(false);
   const [authed, setAuthed] = useState(false);
